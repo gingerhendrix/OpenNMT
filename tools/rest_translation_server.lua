@@ -17,7 +17,8 @@ local cmd = onmt.utils.ExtendedCmdLine.new('rest_translation_server.lua')
 
 local options = {
    {'-port', '7784', [[Port to run the server on.]]},
-   {'-withAttn', false, [[If set returns by default attn vector.]]}
+   {'-withAttn', false, [[If set returns by default attn vector.]]},
+   {'-withTokens', false, [[If set returns tokenization information.]]}
 }
 
 cmd:setCmdLineOptions(options, 'Server')
@@ -96,6 +97,7 @@ local function translateMessage(translator, lines)
         n_best = i,
         pred_score = results[b].preds[i].score
       }
+
       if opt.withAttn or lines[b].withAttn then
         local attnTable = {}
         for j = 1, #results[b].preds[i].attention do
@@ -103,6 +105,37 @@ local function translateMessage(translator, lines)
         end
         lineres.attn = attnTable
       end
+
+      if opt.withTokens or lines[b].withTokens then
+        local tgtTokens = {
+          words = results[b].preds[i].words,
+          features = results[b].preds[i].features,
+        }
+        lineres.tgtTokens = tgtTokens
+
+        local srcWords = batch[b].words
+        local srcIndexes = {}
+        local srcUnknowns = {}
+
+        for w = i, #srcWords do
+          local idx = translator.dicts.src.words:lookup(srcWords[w])
+          table.insert(srcIndexes, idx)
+          if idx == nil then
+            table.insert(srcUnknowns, true)
+          else
+            table.insert(srcUnknowns, false)
+          end
+        end
+
+        local srcTokens = {
+          words = batch[b].words,
+          features = batch[b].features,
+          indexes = srcIndexes,
+          unknowns = srcUnknowns,
+        }
+        lineres.srcTokens = srcTokens
+      end
+
       table.insert(ret, lineres)
     end
     table.insert(translations, ret)
