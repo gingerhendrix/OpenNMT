@@ -385,6 +385,11 @@ Parameters:
 
 ]]
 function Translator:saveBeamHistories(file)
+  local output = assert(io.open(file, 'w'))
+  output:write(require('dkjson').encode(self:encodeBeamHistories()))
+end
+
+function Translator:encodeBeamHistories()
   if not self.beamHistories or #self.beamHistories == 0 then
     return
   end
@@ -412,9 +417,9 @@ function Translator:saveBeamHistories(file)
     table.insert(data.scores, beamScores)
   end
 
-  local output = assert(io.open(file, 'w'))
-  output:write(require('dkjson').encode(data))
   self.beamHistories = {}
+
+  return data
 end
 
 --[[ Translate a batch of source sequences.

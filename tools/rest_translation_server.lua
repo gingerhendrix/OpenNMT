@@ -18,7 +18,8 @@ local cmd = onmt.utils.ExtendedCmdLine.new('rest_translation_server.lua')
 local options = {
    {'-port', '7784', [[Port to run the server on.]]},
    {'-withAttn', false, [[If set returns by default attn vector.]]},
-   {'-withTokens', false, [[If set returns tokenization information.]]}
+   {'-withTokens', false, [[If set returns tokenization information.]]},
+   {'-withBeam', false, [[If set returns beam search tree.]]}
 }
 
 cmd:setCmdLineOptions(options, 'Server')
@@ -91,11 +92,12 @@ local function translateMessage(translator, lines)
         end
       end
 
+
       local lineres = {
         tgt = oline,
         src = srcSent,
         n_best = i,
-        pred_score = results[b].preds[i].score
+        pred_score = results[b].preds[i].score,
       }
 
       if opt.withAttn or lines[b].withAttn then
@@ -134,6 +136,11 @@ local function translateMessage(translator, lines)
           unknowns = srcUnknowns,
         }
         lineres.srcTokens = srcTokens
+      end
+
+      if opt.withBeam or lines[b].withBeam then
+        local beamSearch = translator:encodeBeamHistories()
+        lineres.beamSearch = beamSearch
       end
 
       table.insert(ret, lineres)
