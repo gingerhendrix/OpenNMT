@@ -38,6 +38,34 @@ cmd:option('-batchsize', 1000, [[Size of each parallel batch - you should not ch
 
 local opt = cmd:parse(arg)
 
+local function translatorInfo(translator, req)
+  local checkpoint = torch.load(opt.model)
+  local info = {
+    options=opt,
+    dicts={
+      src={
+        words=translator.dicts.src.words:size(),
+        features=translator.dicts.src.features,
+      },
+      tgt={
+        words=translator.dicts.tgt.words:size(),
+        features=translator.dicts.tgt.features,
+      }
+    },
+    models={
+      options=translator.options,
+      args=translator.model.args,
+      encoder={
+        args=translator.model.models.encoder.args,
+      },
+      decoder={
+        args=translator.model.models.decoder.args,
+      },
+    }
+  }
+  return info
+end
+
 local function translateMessage(translator, lines)
   local batch = {}
  -- We need to tokenize the input line before translation
@@ -165,7 +193,20 @@ local function init_server(port, translator)
         _G.logger:debug("sending response")
         return restserver.response():status(200):entity(translate)
       end,
+    },
+    {
+      method = "GET",
+      path = "/info",
+      consumes = "application/json",
+      produces = "application/json",
+      handler = function(req)
+        _G.logger:debug("receiving info request")
+        local info = translatorInfo(translator, req)
+        _G.logger:debug("sending info response")
+        return restserver.response():status(200):entity(info)
+      end,
     }
+
   })
   return server
 end

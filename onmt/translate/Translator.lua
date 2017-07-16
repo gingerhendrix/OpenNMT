@@ -118,6 +118,7 @@ function Translator:__init(args, model, dicts)
     _G.logger:info('Loading \'' .. self.args.model .. '\'...')
     local checkpoint = torch.load(self.args.model)
 
+    self.options = checkpoint.options
     self.dataType = checkpoint.options.data_type or 'bitext'
     self.modelType = checkpoint.options.model_type or 'seq2seq'
     _G.logger:info('Model %s trained on %s', self.modelType, self.dataType)
